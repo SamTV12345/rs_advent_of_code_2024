@@ -12,11 +12,62 @@ fn main() {
         });
     }
 
-    for row in matrix.iter() {
-        println!("{:?}", row);
-    }
+
+    println!("{}",search_word_in_matrix(&matrix, "XMAS"));
     check_for_x(&matrix);
 }
+
+
+fn search_word_in_matrix(matrix: &Vec<Vec<char>>, word: &str) -> i32 {
+    let mut total_results = 0;
+
+    // Horizontal search
+    for row in matrix {
+        total_results += scan_string(&row.iter().collect::<String>(), word);
+    }
+
+    // Vertical search
+    for column in 0..matrix[0].len() {
+        let mut column_string = String::new();
+        for row in matrix {
+            column_string.push(row[column]);
+        }
+        total_results += scan_string(&column_string, word);
+    }
+
+    // Diagonal search (top-left to bottom-right)
+    let n = matrix.len();
+    let m = matrix[0].len();
+    for d in 0..(n + m - 1) {
+        let mut diagonal = String::new();
+        for i in 0..n {
+            let j = i as isize + d as isize - (n as isize - 1);
+            if j >= 0 && j < m as isize {
+                diagonal.push(matrix[i][j as usize]);
+            }
+        }
+        if !diagonal.is_empty() {
+            total_results += scan_string(&diagonal, word);
+        }
+    }
+
+    // Diagonal search (top-right to bottom-left)
+    for d in 0..(n + m - 1) {
+        let mut diagonal = String::new();
+        for i in 0..n {
+            let j = d as isize - i as isize;
+            if j >= 0 && j < m as isize {
+                diagonal.push(matrix[i][j as usize]);
+            }
+        }
+        if !diagonal.is_empty() {
+            total_results += scan_string(&diagonal, word);
+        }
+    }
+
+    total_results
+}
+
 
 fn check_for_x(matrix: &Vec<Vec<char>>) {
 
@@ -72,59 +123,17 @@ fn check_if_in_range_of_matrix(matrix: &Vec<Vec<char>>, row: i32, column: i32) -
     false
 }
 
-fn search_word_in_matrix(matrix: &Vec<Vec<char>>, word: &str) -> i32 {
-    let mut total_results = 0;
-
-    // Horizontal search
-    /*for row in matrix {
-        total_results += scan_string(&row.iter().collect::<String>(), word);
-    }*/
-
-    // Vertical search
-
-    /*for column in 0..matrix[0].len() {
-        let mut column_string = String::new();
-        for row in matrix {
-            column_string.push(row[column]);
-        }
-        total_results += scan_string(&column_string, word);
-    }*/
-
-    // Diagonal search (top-left to bottom-right)
-    let n = matrix.len();
-    let m = matrix[0].len();
-    for d in 0..(n + m - 1) {
-        let mut diagonal = String::new();
-        for i in 0..n {
-            let j = i as isize + d as isize - (n as isize - 1);
-            if j >= 0 && j < m as isize {
-                diagonal.push(matrix[i][j as usize]);
-            }
-        }
-        if !diagonal.is_empty() {
-            total_results += scan_string(&diagonal, word);
-        }
-    }
-
-    // Diagonal search (top-right to bottom-left)
-    for d in 0..(n + m - 1) {
-        let mut diagonal = String::new();
-        for i in 0..n {
-            let j = d as isize - i as isize;
-            if j >= 0 && j < m as isize {
-                diagonal.push(matrix[i][j as usize]);
-            }
-        }
-        if !diagonal.is_empty() {
-            total_results += scan_string(&mut diagonal, word);
-        }
-    }
-    total_results
-}
-
 fn scan_string(input: &str, word: &str) -> i32 {
     let mut counter = 0;
 
+    let regex = Regex::new(word).unwrap();
+    regex.find_iter(input).for_each(|_| {
+        counter += 1;
+    });
 
+    let reversed_string = input.chars().rev().collect::<String>();
+    regex.find_iter(&reversed_string).for_each(|_| {
+        counter += 1;
+    });
     counter
 }
