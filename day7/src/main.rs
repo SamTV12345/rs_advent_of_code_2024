@@ -8,7 +8,7 @@ enum MathOperations {
 }
 
 fn main() {
-    let content = fs::read_to_string("./day7/sample.txt").unwrap();
+    let content = fs::read_to_string("./day7/input.txt").unwrap();
 
     let lines = content.split("\n");
     let mut map: HashMap<i64, Vec<i64>> = HashMap::new();
@@ -44,14 +44,13 @@ fn main() {
     for (key, value) in map {
 
         let n = value.len()-1; // Number of bits
-        let max_value = (1 << n) - 1; // Maximum value for n-bit counter
-        let mut counter: u64 = 0;
+        let max_value: u128 = (1 << n) - 1; // Maximum value for n-bit counter
+        let mut counter: u128 = 0;
         for _ in 0..(max_value + 1) {
             let binary_string = format!("{:0width$b}", counter, width = n); // Print the counter
             // value in binary
             // format
             let math_ops = calc_ops_from_str(&binary_string);
-            println!("Math ops: {:?}", math_ops);
             if key == calc_math(&value, &math_ops) {
                 total_count += key;
                 break;
