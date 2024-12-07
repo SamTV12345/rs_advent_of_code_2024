@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fs;
+use rayon::prelude::*;
 
 #[derive(Clone, Debug)]
 enum MathOperations {
@@ -10,91 +11,54 @@ enum MathOperations {
 fn main() {
     let content = fs::read_to_string("./day7/input.txt").unwrap();
 
-    let lines = content.split("\n");
-    let mut map: HashMap<i64, Vec<i64>> = HashMap::new();
+    fn parse_line(line: &str) -> (u64, Vec<u64>) {
+        let (eq_result, eq_operands) = line.split_once(':').unwrap();
+        (
+            eq_result.parse().unwrap(),
+            eq_operands
+                .split_ascii_whitespace()
+                .map(|v| v.parse().unwrap()).collect(),
+        )
+    }
 
-    let mut line_counter = 0;
-    for line in lines {
-        let line = line.trim();
 
-        if line.is_empty() {
-            continue;
-        }
-        line_counter += 1;
-        let split = line.split(":").collect::<Vec<&str>>();
-
-        let key = split[0].parse::<i64>().unwrap();
-        let value = split[1];
-        let value = value.trim();
-
-        value.split_whitespace().for_each(|v|{
-            let v = v.trim();
-            if v.is_empty() {
-                return;
-            }
-            if let Some(found) = map.get_mut(&key) {
-                found.push(v.parse::<i64>().unwrap());
-            } else {
-                map.insert(key, vec![v.parse::<i64>().unwrap()]);
-            }
+    let total_count: u64 = content
+        .par_lines()
+        .filter_map(|line| {
+            let (eq_result, eq_operands) = parse_line(line);
+            can_be_solved_number_1(eq_result, eq_operands, 0).then_some(eq_result)
         })
-    }
+        .sum();
 
-    let mut total_count = 0;
-    for (key, value) in map {
+    let total_count_2: u64 = content
+        .par_lines()
+        .filter_map(|line| {
+            let (eq_result, eq_operands) = parse_line(line);
+            can_be_solved_numer_2(eq_result, eq_operands, 0).then_some(eq_result)
+        })
+        .sum();
 
-        let n = value.len()-1; // Number of bits
-        let max_value: u128 = (1 << n) - 1; // Maximum value for n-bit counter
-        let mut counter: u128 = 0;
-        for _ in 0..(max_value + 1) {
-            let binary_string = format!("{:0width$b}", counter, width = n); // Print the counter
-            // value in binary
-            // format
-            let math_ops = calc_ops_from_str(&binary_string);
-            if key == calc_math(&value, &math_ops) {
-                total_count += key;
-                break;
-            }
-            counter = (counter + 1) & max_value;
-        }
-    }
     println!("Total count is {}", total_count);
+    println!("Total count 2 is {}", total_count_2);
 }
 
-fn calc_ops_from_str(ops: &str) -> Vec<MathOperations> {
-    let mut math_ops = vec![];
-    for op in ops.chars() {
-        match op {
-            '0' => {
-                math_ops.push(MathOperations::Add);
-            }
-            '1' => {
-                math_ops.push(MathOperations::Multiply);
-            }
-            _ => {
-                panic!("Invalid operator");
-            }
-        }
+fn can_be_solved_number_1(key: u64, values: Vec<u64>, current_result: u64) -> bool {
+    if let Some(val) = values.get(0) {
+        can_be_solved_number_1(key, values[1..].to_vec(), current_result + val)
+            || can_be_solved_number_1(key, values[1..].to_vec(), current_result * val)
+    } else {
+        key == current_result
     }
-    math_ops
 }
 
-
-fn calc_math(values: &Vec<i64>, math_ops: &Vec<MathOperations>) -> i64 {
-    let mut result = 0;
-    for (index, value) in values.iter().enumerate() {
-        if index == 0 {
-            result = *value;
-            continue;
-        }
-        match math_ops[index-1] {
-            MathOperations::Add => {
-                result += value;
-            }
-            MathOperations::Multiply => {
-                result *= value;
-            }
-        }
+fn can_be_solved_numer_2(key: u64, values: Vec<u64>, current_result: u64) -> bool {
+    if let Some(val) = values.get(0) {
+        can_be_solved_numer_2(key, values[1..].to_vec(), current_result + val)
+            || can_be_solved_numer_2(key, values[1..].to_vec(), current_result * val)
+            // 72||10 = 7210 ist eigentlich 72 * 10^(Anzahl an Stellen von 10) + 10
+            || can_be_solved_numer_2(key, values[1..].to_vec(), current_result * u64::pow(10, val
+            .to_string().len() as u32) + val)
+    } else {
+        key == current_result
     }
-    result
 }
